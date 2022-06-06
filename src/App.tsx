@@ -1,13 +1,6 @@
-import React, { useState, useEffect, useRef } from "react";
-import {
-  Box,
-  Button,
-  Flex,
-  Input,
-  InputGroup,
-  InputRightElement,
-} from "@chakra-ui/react";
-import { ArrowDownIcon, ArrowUpIcon, Icon } from "@chakra-ui/icons";
+import React, { useState } from "react";
+import { Button, Flex, Input } from "@chakra-ui/react";
+import { ArrowDownIcon, ArrowUpIcon } from "@chakra-ui/icons";
 import "./App.css";
 
 export enum ReadyState {
@@ -26,51 +19,62 @@ function App() {
   const [address, setAddress] = useState("");
   const [message, setMessage] = useState("");
   const [dialog, setDialog] = useState<WsData[]>([]);
-  const wsRef = useRef<WebSocket>();
+  const [ws, setWs] = useState<WebSocket | null>(null);
 
-  const connect = (event: React.FormEvent<HTMLButtonElement>) => {
-    console.log(address);
-    wsRef.current?.addEventListener("close", () => {});
-    wsRef.current = new WebSocket(address);
-    wsRef.current.addEventListener("open", () => {});
+  const connect = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (ws !== null) {
+      ws.close();
+      return;
+    }
+
+    const client = new WebSocket(address);
+
+    client.addEventListener("open", () => {
+      console.log("connected");
+      setWs(client);
+    });
+    client.addEventListener("close", () => {
+      console.log("disconnected");
+      setWs(null);
+    });
+    client.addEventListener("error", (e) => {
+      console.error(e);
+      setWs(null);
+    });
   };
+
+  ws?.addEventListener("message", (msg) => {
+    setDialog([...dialog, { type: "receive", message: msg.data }]);
+  });
 
   const submit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (message === "") return;
-    if (wsRef.current?.readyState === ReadyState.Open) {
-      wsRef.current?.send(message);
+    if (ws?.readyState === ReadyState.Open) {
+      ws?.send(message);
       setDialog([...dialog, { type: "send", message: message }]);
       setMessage("");
     }
   };
 
-  wsRef.current?.addEventListener("message", (msg) => {
-    setDialog([...dialog, { type: "receive", message: msg.data }]);
-  });
-
-  const statusColors = ["gray", "lightgreen", "orange", "red"];
+  const buttonMessage = ["Connecting", "Close", "Closing", "Connect"];
 
   return (
     <div className="App">
-      <Flex m={4}>
-        <Input
-          type="text"
-          name="address"
-          value={address}
-          onChange={(e) => setAddress(e.target.value)}
-        />
-        <Button onClick={connect}>Connect</Button>
-        <Icon
-          viewBox="0 0 200 200"
-          color={statusColors[wsRef.current?.readyState || 0]}
-        >
-          <path
-            fill="currentColor"
-            d="M 100, 100 m -75, 0 a 75,75 0 1,0 150,0 a 75,75 0 1,0 -150,0"
+      <form onSubmit={connect}>
+        <Flex m={4}>
+          <Input
+            type="text"
+            name="address"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            bgColor={ws?.readyState === ReadyState.Open ? "green" : ""}
+            isDisabled={(ws?.readyState || 3) <= 2}
           />
-        </Icon>
-      </Flex>
+          <Button type="submit">{buttonMessage[ws?.readyState || 3]}</Button>
+        </Flex>
+      </form>
       <section>
         {dialog.map((data, i) => (
           <p key={i}>
@@ -81,29 +85,17 @@ function App() {
         ))}
       </section>
 
-      <Box
-        bg="white"
-        m={4}
-        rounded="md"
-        pos="fixed"
-        right="0"
-        bottom="0"
-        left="0"
-      >
-        <form onSubmit={submit}>
-          <InputGroup>
-            <Input
-              type="text"
-              name="message"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-            />
-            <InputRightElement width="5.5rem">
-              <Button type="submit">Submit</Button>
-            </InputRightElement>
-          </InputGroup>
-        </form>
-      </Box>
+      <form onSubmit={submit}>
+        <Flex m={4} rounded="md" pos="fixed" right="0" bottom="0" left="0">
+          <Input
+            type="text"
+            name="message"
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+          />
+          <Button type="submit">Submit</Button>
+        </Flex>
+      </form>
     </div>
   );
 }
