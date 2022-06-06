@@ -2,10 +2,12 @@ import React, { useState, useEffect, useRef } from "react";
 import {
   Box,
   Button,
+  Flex,
   Input,
   InputGroup,
   InputRightElement,
 } from "@chakra-ui/react";
+import { ArrowDownIcon, ArrowUpIcon, Icon } from "@chakra-ui/icons";
 import "./App.css";
 
 export enum ReadyState {
@@ -15,39 +17,67 @@ export enum ReadyState {
   Closed = 3,
 }
 
+type WsData = {
+  type: string;
+  message: string;
+};
+
 function App() {
+  const [address, setAddress] = useState("");
   const [message, setMessage] = useState("");
-  const [dialog, setDialog] = useState<string[]>([]);
+  const [dialog, setDialog] = useState<WsData[]>([]);
   const wsRef = useRef<WebSocket>();
+
+  const connect = (event: React.FormEvent<HTMLButtonElement>) => {
+    console.log(address);
+    wsRef.current?.addEventListener("close", () => {});
+    wsRef.current = new WebSocket(address);
+    wsRef.current.addEventListener("open", () => {});
+  };
 
   const submit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (message === "") return;
     if (wsRef.current?.readyState === ReadyState.Open) {
       wsRef.current?.send(message);
-      setDialog([...dialog, `send: ${message}`]);
+      setDialog([...dialog, { type: "send", message: message }]);
       setMessage("");
     }
   };
 
-  useEffect(() => {
-    wsRef.current = new WebSocket("ws://localhost:8888/ws");
-    wsRef.current.addEventListener("open", () => {});
-    return () => {
-      wsRef.current?.addEventListener("close", () => {});
-    };
-  }, []);
-
   wsRef.current?.addEventListener("message", (msg) => {
-    setDialog([...dialog, `receive: ${msg.data}`]);
+    setDialog([...dialog, { type: "receive", message: msg.data }]);
   });
+
+  const statusColors = ["gray", "lightgreen", "orange", "red"];
 
   return (
     <div className="App">
-      <section>status : {wsRef.current?.readyState}</section>
+      <Flex m={4}>
+        <Input
+          type="text"
+          name="address"
+          value={address}
+          onChange={(e) => setAddress(e.target.value)}
+        />
+        <Button onClick={connect}>Connect</Button>
+        <Icon
+          viewBox="0 0 200 200"
+          color={statusColors[wsRef.current?.readyState || 0]}
+        >
+          <path
+            fill="currentColor"
+            d="M 100, 100 m -75, 0 a 75,75 0 1,0 150,0 a 75,75 0 1,0 -150,0"
+          />
+        </Icon>
+      </Flex>
       <section>
-        {dialog.map((d, i) => (
-          <p key={i}>{d}</p>
+        {dialog.map((data, i) => (
+          <p key={i}>
+            {data.type === "send" && <ArrowUpIcon />}
+            {data.type === "receive" && <ArrowDownIcon />}
+            {data.message}
+          </p>
         ))}
       </section>
 
