@@ -1,4 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
+import {
+  Box,
+  Button,
+  Input,
+  InputGroup,
+  InputRightElement,
+} from "@chakra-ui/react";
 import "./App.css";
 
 export enum ReadyState {
@@ -43,15 +50,30 @@ function App() {
           <p key={i}>{d}</p>
         ))}
       </section>
-      <form onSubmit={submit}>
-        <input
-          type="text"
-          name="message"
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-        />
-        <input type="submit" value="Submit" />
-      </form>
+
+      <Box
+        bg="white"
+        m={4}
+        rounded="md"
+        pos="fixed"
+        right="0"
+        bottom="0"
+        left="0"
+      >
+        <form onSubmit={submit}>
+          <InputGroup>
+            <Input
+              type="text"
+              name="message"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+            />
+            <InputRightElement width="5.5rem">
+              <Button type="submit">Submit</Button>
+            </InputRightElement>
+          </InputGroup>
+        </form>
+      </Box>
     </div>
   );
 }
