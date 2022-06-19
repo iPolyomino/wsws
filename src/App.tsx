@@ -2,7 +2,6 @@ import React, { useState } from "react";
 
 import Address from "./Address";
 import Submit from "./Submit";
-import { ReadyState } from "./ReadyState";
 import "./App.css";
 
 function App() {
