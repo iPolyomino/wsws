@@ -35,6 +35,7 @@ function Address({ ws, setWs }: { ws: WebSocket | null; setWs: any }) {
         <Input
           type="text"
           name="address"
+          placeholder="ws://localhost:8080"
           value={address}
           onChange={(e) => setAddress(e.target.value)}
           bgColor={ws?.readyState === ReadyState.Open ? "green" : ""}
